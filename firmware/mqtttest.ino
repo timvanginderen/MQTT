@@ -44,18 +44,25 @@ void setup() {
     // publish/subscribe
     if (client.isConnected()) {
         client.subscribe("amoeder");
-        client.publish("amoeder","hello world");
-        
-        int sensorValue = analogRead(analogPin);
-
-        String message = String(sensorValue);
-        message.getBytes(bytebuffer, 20);
-
-        client.publish("amoeder", bytebuffer, 20);
     }
 }
 
 void loop() {
     if (client.isConnected())
         client.loop();
+
+    publishSensorValue();
+
+    delay(1000);
+
+
+}
+
+void publishSensorValue() {
+    int sensorValue = analogRead(analogPin);
+
+    String message = String(sensorValue);
+    message.getBytes(bytebuffer, 20);
+
+    client.publish("amoeder", bytebuffer, 20);
 }
