@@ -23,7 +23,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
     p[length] = NULL;
     String message(p);
 
-    if (message.equals("RED"))
+    if (message.equals("GET/A0")) {
+      publishSensorValue();
+    } else if (message.equals("RED"))
         RGB.color(255, 0, 0);
     else if (message.equals("GREEN"))
         RGB.color(0, 255, 0);
@@ -50,12 +52,6 @@ void setup() {
 void loop() {
     if (client.isConnected())
         client.loop();
-
-    publishSensorValue();
-
-    delay(1000);
-
-
 }
 
 void publishSensorValue() {
