@@ -9,12 +9,15 @@ void callback(char* topic, byte* payload, unsigned int length);
  * want to use domain name,
  * MQTT client("www.sample.com", 1883, callback);
  **/
-byte server[] = { 192,168,1,20 };
+byte server[] = { 192,168,1,121 };
 MQTT client(server, 1883, callback);
 
 byte bytebuffer[30];
 int analogPin = A0;
 
+
+unsigned long timer; // the timer
+unsigned long INTERVAL = 1000; // the repeat interval
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -25,14 +28,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     if (message.equals("GET/A0")) {
       publishSensorValue();
-    } else if (message.equals("RED"))
-        RGB.color(255, 0, 0);
-    else if (message.equals("GREEN"))
-        RGB.color(0, 255, 0);
-    else if (message.equals("BLUE"))
-        RGB.color(0, 0, 255);
-    else
-        RGB.color(255, 255, 255);
+    } else {
+
+      if (message.equals("RED"))
+          RGB.color(255, 0, 0);
+      else if (message.equals("GREEN"))
+          RGB.color(0, 255, 0);
+      else if (message.equals("BLUE"))
+          RGB.color(0, 0, 255);
+      else
+          RGB.color(255, 255, 255);
+    }
+
     delay(1000);
 }
 
@@ -40,18 +47,34 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup() {
     RGB.control(true);
 
-    // connect to the server
-    client.connect("sparkclient");
+    timer = millis(); // start timer
 
-    // publish/subscribe
-    if (client.isConnected()) {
-        client.subscribe("amoeder");
-    }
+    connectAndSuscribe();
 }
 
 void loop() {
-    if (client.isConnected())
+    if (client.isConnected()) {
         client.loop();
+
+        if ((millis()-timer) > INTERVAL) {
+            timer += INTERVAL; // reset timer by moving it along to the next interval
+            publishSensorValue();
+        }
+
+    } else {
+      delay(5000);
+      connectAndSuscribe();
+    }
+}
+
+void connectAndSuscribe() {
+  // connect to the server
+  client.connect("sparkclient");
+
+  // publish/subscribe
+  if (client.isConnected()) {
+      client.subscribe("amoeder");
+  }
 }
 
 void publishSensorValue() {
