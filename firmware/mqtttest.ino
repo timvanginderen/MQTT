@@ -17,37 +17,33 @@ int analogPin = A0;
 
 
 unsigned long timer; // the timer
-unsigned long INTERVAL = 15 * 1000; // the repeat interval
+unsigned long PUBLISH_INTERVAL = 60 * 1000; // the repeat interval
+unsigned long RE_CONNECT_INTERVAL = 30 * 1000; // the repeat interval
 
-// recieve message
+// recieve message and trigger publish or led color change
 void callback(char* topic, byte* payload, unsigned int length) {
     char p[length + 1];
     memcpy(p, payload, length);
     p[length] = NULL;
     String message(p);
 
-    if (message.equals("/GET/A0")) {
-      // publishSensorValue();
-    } else {
-
-      if (message.equals("RED"))
-          RGB.color(255, 0, 0);
-      else if (message.equals("GREEN"))
-          RGB.color(0, 255, 0);
-      else if (message.equals("BLUE"))
-          RGB.color(0, 0, 255);
-      else
-          RGB.color(255, 255, 255);
-    }
+    if (message.equals("RED"))
+        RGB.color(255, 0, 0);
+    else if (message.equals("GREEN"))
+        RGB.color(0, 255, 0);
+    else if (message.equals("BLUE"))
+        RGB.color(0, 0, 255);
+    else if (message.equals("A0"))
+        publishSensorValue();
+    else
+        RGB.color(255, 255, 255);
 
     delay(1000);
 }
 
-
 void setup() {
     RGB.control(true);
-
-    timer = millis(); // start timer
+    timer = millis();
 
     connectAndSuscribe();
 }
@@ -56,44 +52,41 @@ void loop() {
     if (client.isConnected()) {
         client.loop();
 
-        if ((millis()-timer) > INTERVAL) {
-            timer += INTERVAL; // reset timer by moving it along to the next interval
+        if ((millis()-timer) > PUBLISH_INTERVAL) {
+            // reset timer by moving it along to the next interval
+            timer += PUBLISH_INTERVAL;
+
             publishSensorValue();
         }
 
     } else {
-      delay(5000);
+      // Try to re-connect on failure
+      delay(RE_CONNECT_INTERVAL);
       connectAndSuscribe();
     }
 }
 
 void connectAndSuscribe() {
   // connect to the server
-  client.connect("sparkclient");
+  client.connect("photon");
 
-  // publish/subscribe
-  // if (client.isConnected()) {
-  //     client.subscribe("/amoeder/humidity");
-  // }
+  // subscribe to receive mqtt message to trigger events
+  if (client.isConnected()) {
+      client.subscribe("/photon/input");
+  }
 }
 
 void publishSensorValue() {
-    // int sensorValue = analogRead(analogPin);
-    //
-    // String message = String(sensorValue);
-    // message.getBytes(bytebuffer, 20);
 
-    // client.publish("/amoeder/humidity", bytebuffer, 20);
-
-
+    // Get sensor value
     int sensorValue = analogRead(analogPin);
+
+    // Convert to char*
     String message = String(sensorValue);
-
-    // char const* pchar = message.c_str();
-
     char* char_type = new char[message.length()];
     strcpy(char_type, message.c_str());
 
-    client.publish("/amoeder/humidity", char_type);
+    // Publish to MQTT topic
+    client.publish("/photon/humidity", char_type);
 
 }
