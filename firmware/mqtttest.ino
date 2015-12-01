@@ -17,7 +17,7 @@ int analogPin = A0;
 
 
 unsigned long timer; // the timer
-unsigned long INTERVAL = 1000; // the repeat interval
+unsigned long INTERVAL = 15 * 1000; // the repeat interval
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -26,8 +26,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
     p[length] = NULL;
     String message(p);
 
-    if (message.equals("GET/A0")) {
-      publishSensorValue();
+    if (message.equals("/GET/A0")) {
+      // publishSensorValue();
     } else {
 
       if (message.equals("RED"))
@@ -72,16 +72,28 @@ void connectAndSuscribe() {
   client.connect("sparkclient");
 
   // publish/subscribe
-  if (client.isConnected()) {
-      client.subscribe("amoeder");
-  }
+  // if (client.isConnected()) {
+  //     client.subscribe("/amoeder/humidity");
+  // }
 }
 
 void publishSensorValue() {
+    // int sensorValue = analogRead(analogPin);
+    //
+    // String message = String(sensorValue);
+    // message.getBytes(bytebuffer, 20);
+
+    // client.publish("/amoeder/humidity", bytebuffer, 20);
+
+
     int sensorValue = analogRead(analogPin);
-
     String message = String(sensorValue);
-    message.getBytes(bytebuffer, 20);
 
-    client.publish("amoeder", bytebuffer, 20);
+    // char const* pchar = message.c_str();
+
+    char* char_type = new char[message.length()];
+    strcpy(char_type, message.c_str());
+
+    client.publish("/amoeder/humidity", char_type);
+
 }
